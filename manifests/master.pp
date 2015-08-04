@@ -1,0 +1,2 @@
+include envsetup
+include hadoopsetup

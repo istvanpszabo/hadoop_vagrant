@@ -1,0 +1,101 @@
+Vagrant is a great tool to setup VM boxes from scripts on your machine.
+
+Please see the website:
+http://docs.vagrantup.com/v2/
+
+First you have to download the vagrant tool which is a small command line tool.
+When you have it, it is very easy to configure the box that you need.
+
+Lets get started!
+You can put commands into the vagrant file with the # sign.
+
+When we downloaded the app and created a folder to place our files in, we can start with the following command:
+vagrant init
+This command will create an initial file for setup. Basically creates a project
+
+We have to add the following lines to the file:
+
+---------------------------------------------------------------
+VAGRANTFILE_API_VERSION = '2'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do | config |
+
+	#variables here
+	ipaddress = '192.168.1.1'
+	slaves = 2
+	slaveport = 24201
+
+	config.vm.box = 'ubuntu/trusty64'
+
+# master configuration	
+	config.vm.define :master, primary: true do | master |
+	
+		master.vm.network 'private_network', ip:ipaddress + '9'
+		
+		master.vm.network 'forwarded_port', guest:50700, host:24200
+		
+		master.vm.hostname = 'master'
+		
+		master.vm.provider 'virtualbox' do | v |
+			v.name = 'master'
+			v.memory = 512
+		end
+	end
+
+	
+# slaves configuration
+	1.upto(slaves) do | index |
+		slavename = 'slavename-' + index.to_s
+		
+		config.vm.define slavename do | slave |
+			
+			slave.vm.network 'private_network', ip:ipaddress + index.to_s
+			
+			slave.vm.network 'forwarded_port', guest: 50701, host:slaveport + index
+			
+			slave.vm.hostname = 'slave-'+index.to_s
+			
+			slave.vm.provider 'virtualbox' do | v1 |
+				v1.name = 'slave-' + index.to_s
+				v1.memory = 512
+			end
+		end
+	end
+	
+end
+---------------------------------------------------------------
+
+This will pull a prepared virtual machine from the Atlas repository.
+https://atlas.hashicorp.com/boxes/search
+
+Lets see what is going on here.
+We define the API version as a variable. Then based on this we start a configuration 
+(the config is just a variable that we can reference later on).
+After this some variables come that can be used later on.
+We define the type of the VM as Ubuntu.
+And we start to setup the machines.
+The master will be the first. We also set the flag primary for it.
+After this we need to set the networking options, they will be once a private network with
+assigned ip for the cluster and a forwarded port for the internet access. The ports should
+be unique for every machine in the script. We also set the name of the host, same way unique.
+When we are done with this, in a subgroup we can set the provider options: here the machine name
+and the RAM used will be set.
+The next step is the configuration of the slaves. This uses a very typical loop of a Ruby code.
+We iterate through the total number of slaves (see as a variable) and then doing the same 
+as it has been done for the master.
+
+
+When we have the file set, we can start by issuing the
+	vagrant up
+command that will create the virtual machine.
+
+Deleting the machines work with the
+	vagrant destroy 
+command.
+
+Logging into the machines goes with the
+	vagrant ssh
+command.
+	
+
+
